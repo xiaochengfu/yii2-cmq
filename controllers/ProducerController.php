@@ -1,6 +1,6 @@
 <?php
 
-namespace xiaochengfu\kafka\controllers;
+namespace xiaochengfu\cmq\controllers;
 
 use xiaochengfu\cmq\component\QueueBase;
 use xiaochengfu\kafka\component\Producer;

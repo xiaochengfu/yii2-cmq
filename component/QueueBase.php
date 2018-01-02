@@ -1,6 +1,6 @@
 <?php
 namespace xiaochengfu\cmq\component;
-require_once '../cmq/cmq_api.php';
+require_once  dirname(dirname(__FILE__))  . '/cmq/cmq_api.php';
 require_once CMQAPI_ROOT_PATH . '/account.php';
 require_once CMQAPI_ROOT_PATH . '/queue.php';
 require_once CMQAPI_ROOT_PATH . '/cmq_exception.php';
@@ -21,6 +21,7 @@ class QueueBase
     private $endpoint;
     private $my_queue;
     private $queue_name;
+    private $callback;
 
     public function __construct()
     {
@@ -29,11 +30,17 @@ class QueueBase
         $this->secretKey = $config['secretKey'];
         $this->endpoint = $config['endpoint'];
         $this->queue_name = $config['queue_name'];
+        $this->callback = $config['callback'];
         $my_account = new \Account($this->endpoint, $this->secretId, $this->secretKey);
 
         $this->my_queue = $my_account->get_queue($this->queue_name);
     }
 
+    /**
+     * Description:  创建消息队列
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     */
     public function create(){
         $queue_meta = new \QueueMeta();
         $queue_meta->queueName = $this->queue_name;
@@ -44,6 +51,13 @@ class QueueBase
         $this->my_queue->create($queue_meta);
     }
 
+    /**
+     * Description:  发送消息
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     * @param $msg_body
+     * @return array
+     */
     public function send($msg_body)
     {
         try {
@@ -65,6 +79,11 @@ class QueueBase
         }
     }
 
+    /**
+     * Description:  接收消息
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     */
     public function receive(){
         $this->setProcessName($this->queue_name);
         while (true) {
@@ -74,8 +93,8 @@ class QueueBase
                 if(!isset($array_msg['code'])){
                     $array_msg['code'] = 0;
                     echo "Receive Message Succeed! " . $recv_msg . "\n";
-                    //接收成功后，删除消息
-                    $this->my_queue->delete_message($array_msg['receiptHandle']);
+                    $object = \Yii::createObject($this->callback);
+                    $object->execute($array_msg);
                 }else{
                     echo "No Message Waitting ..." . "\n";
                 }
@@ -88,10 +107,22 @@ class QueueBase
         }
     }
 
+    /**
+     * Description:  删除消息
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     * @param $receiptHandle
+     */
     public function delete($receiptHandle){
         $this->my_queue->delete_message($receiptHandle);
     }
 
+    /**
+     * Description:  设置进程名称
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     * @param $name
+     */
     public function setProcessName($name){
         if (function_exists('cli_set_process_title')) {
             cli_set_process_title($name);
