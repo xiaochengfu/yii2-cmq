@@ -16,8 +16,9 @@ class ConsumerController extends Controller
      * Description:  启动消费进程
      * Author: hp <xcf-hp@foxmail.com>
      * Updater:
+     * @param string $type
      */
-    public function actionStart(){
+    public function actionStart($type = ''){
         $setting = \Yii::$app->params['cmq'];
         $base = new QueueBase();
         //设置进程名称
@@ -25,7 +26,13 @@ class ConsumerController extends Controller
         echo "php-kafka start success process name ".$setting['processName']."\n";
         echo "Waiting for partition assignment... (make take some time when\n";
         echo "quickly re-joining the group after leaving it.)\n";
-        echo "---------------------------cmq等待消费...-----------------------------------\n";
-        $base->receive();
+        if($type == 'batch'){
+            echo "---------------------------cmq等待批量消费...-----------------------------------\n";
+            $base->batchReceive();
+        }else{
+            echo "---------------------------cmq等待消费...-----------------------------------\n";
+            $base->receive();
+        }
+       
     }
 }

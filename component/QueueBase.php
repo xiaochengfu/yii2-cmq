@@ -29,7 +29,7 @@ class QueueBase
         $this->secretId = $config['secretId'];
         $this->secretKey = $config['secretKey'];
         $this->endpoint = $config['endpoint'];
-        $this->queue_name = $config['queue_name'];
+        $this->queue_name = $config['queueName'];
         $this->callback = $config['callback'];
         $my_account = new \Account($this->endpoint, $this->secretId, $this->secretKey);
 
@@ -85,7 +85,6 @@ class QueueBase
      * Updater:
      */
     public function receive(){
-        $this->setProcessName($this->queue_name);
         while (true) {
             try{
                 $recv_msg = $this->my_queue->receive_message(3);
@@ -97,6 +96,39 @@ class QueueBase
                     $object->execute($array_msg);
                 }else{
                     echo "No Message Waitting ..." . "\n";
+                }
+            }catch (\Exception $e) {
+                if($e->getCode() == 700){
+                    echo "No Message Waitting ..." . "\n";
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Description:  批量接收消息
+     * Author: hp <xcf-hp@foxmail.com>
+     * Updater:
+     */
+    public function batchReceive(){
+        while (true) {
+            try{
+                $wait_seconds = 3;
+                $num_of_msg = 16;
+                $recv_msg_list = $this->my_queue->batch_receive_message($num_of_msg, $wait_seconds);
+                if(!empty($recv_msg_list)){
+                    foreach ($recv_msg_list as $key=>$value){
+                        $array_msg = json_decode($value,true);
+                        if(!isset($array_msg['code'])){
+                            $array_msg['code'] = 0;
+                            echo "Receive Message Succeed! " .$value. "\n";
+                            $object = \Yii::createObject($this->callback);
+                            $object->execute($array_msg);
+                        }else{
+                            echo "No Message Waitting ..." . "\n";
+                        }
+                    }
                 }
             }catch (\Exception $e) {
                 if($e->getCode() == 700){
